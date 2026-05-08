@@ -47,23 +47,16 @@ class MainViewModel @Inject constructor(
 
     init {
         checkConfiguration()
-        observeAmplitude()
     }
 
     private fun checkConfiguration() {
+        val isAsrConfigured = preferencesManager.isAsrConfigured()
+        val isPolishConfigured = preferencesManager.isPolishConfigured()
         _uiState.update {
             it.copy(
-                isAsrConfigured = preferencesManager.isAsrConfigured(),
-                isPolishConfigured = preferencesManager.isPolishConfigured()
+                isAsrConfigured = isAsrConfigured,
+                isPolishConfigured = isPolishConfigured
             )
-        }
-    }
-
-    private fun observeAmplitude() {
-        viewModelScope.launch {
-            audioRecorder.amplitude.collect { amp ->
-                _uiState.update { it.copy(amplitude = amp) }
-            }
         }
     }
 
@@ -72,7 +65,8 @@ class MainViewModel @Inject constructor(
     }
 
     fun startRecording() {
-        if (!_uiState.value.hasAudioPermission) {
+        val currentState = _uiState.value
+        if (!currentState.hasAudioPermission) {
             _uiState.update { it.copy(error = "需要麦克风权限") }
             return
         }
@@ -85,17 +79,19 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(error = null, recognitionText = "") }
 
-            audioRecorder.startRecording()
-                .onSuccess { file ->
+            val result = audioRecorder.startRecording()
+            result.fold(
+                onSuccess = { file ->
                     currentAudioFile = file
                     _uiState.update { it.copy(isRecording = true, recordingDuration = "00:00") }
                     startTimer()
                     startAmplitudeMonitoring()
                     startRecognition()
-                }
-                .onFailure { error ->
+                },
+                onFailure = { error ->
                     _uiState.update { it.copy(error = "启动录音失败：${error.message}") }
                 }
+            )
         }
     }
 
@@ -124,8 +120,12 @@ class MainViewModel @Inject constructor(
 
     private fun startRecognition() {
         recognitionJob = viewModelScope.launch {
-            speechRecognitionService.connect().collect { event ->
-                handleRecognitionEvent(event)
+            try {
+                speechRecognitionService.connect().collect { event ->
+                    handleRecognitionEvent(event)
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "语音识别连接失败：${e.message}") }
             }
         }
     }
@@ -140,11 +140,7 @@ class MainViewModel @Inject constructor(
             }
             is RecognitionEvent.Text -> {
                 _uiState.update { state ->
-                    val newText = if (event.isFinal) {
-                        state.recognitionText + event.text
-                    } else {
-                        event.text
-                    }
+                    val newText = state.recognitionText + event.text
                     state.copy(recognitionText = newText)
                 }
             }
@@ -160,15 +156,17 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isRecording = false) }
             
-            audioRecorder.stopRecording()
-                .onSuccess {
+            val result = audioRecorder.stopRecording()
+            result.fold(
+                onSuccess = { _ ->
                     currentAudioFile?.let { file ->
                         uploadAndRecognize(file)
                     }
-                }
-                .onFailure { error ->
+                },
+                onFailure = { error ->
                     _uiState.update { it.copy(error = "停止录音失败：${error.message}") }
                 }
+            )
             
             speechRecognitionService.disconnect()
         }
@@ -198,16 +196,17 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isProcessing = true, error = null) }
 
-            textPolishingService.polishText(recognitionText)
-                .onSuccess { polishedText ->
+            val result = textPolishingService.polishText(recognitionText)
+            result.fold(
+                onSuccess = { polishedText ->
                     _uiState.update {
                         it.copy(
                             polishedText = polishedText,
                             isProcessing = false
                         )
                     }
-                }
-                .onFailure { error ->
+                },
+                onFailure = { error ->
                     _uiState.update {
                         it.copy(
                             error = "润色失败：${error.message}",
@@ -215,6 +214,7 @@ class MainViewModel @Inject constructor(
                         )
                     }
                 }
+            )
         }
     }
 
