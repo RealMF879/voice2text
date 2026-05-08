@@ -39,9 +39,8 @@ fun PolishDebugScreen(
                 .padding(16.dp)
         ) {
             if (!uiState.isConfigured) {
-                ConfigurationWarningCard(
-                    message = "请先配置AI润色服务",
-                    modifier = Modifier.fillMaxWidth()
+                WarningCard(
+                    message = "请先配置AI润色服务"
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }

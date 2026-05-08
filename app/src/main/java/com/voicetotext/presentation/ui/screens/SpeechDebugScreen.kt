@@ -53,9 +53,8 @@ fun SpeechDebugScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (!uiState.isConfigured) {
-                ConfigurationWarningCard(
-                    message = "请先配置语音识别服务",
-                    modifier = Modifier.fillMaxWidth()
+                WarningCard(
+                    message = "请先配置语音识别服务"
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -187,6 +186,34 @@ fun RecordingIndicator() {
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "录音中...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+        }
+    }
+}
+
+@Composable
+fun WarningCard(message: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onErrorContainer
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer
             )
