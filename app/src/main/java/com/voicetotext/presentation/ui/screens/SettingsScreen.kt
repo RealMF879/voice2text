@@ -210,7 +210,7 @@ fun AsrConfigSection(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 leadingIcon = {
-                    Icon(Icons.Default.Model, contentDescription = null)
+                    Icon(Icons.Default.Memory, contentDescription = null)
                 }
             )
         }
@@ -303,7 +303,7 @@ fun PolishConfigSection(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 leadingIcon = {
-                    Icon(Icons.Default.Model, contentDescription = null)
+                    Icon(Icons.Default.Memory, contentDescription = null)
                 }
             )
         }
